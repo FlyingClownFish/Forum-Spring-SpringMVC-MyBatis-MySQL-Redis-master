@@ -61,7 +61,7 @@ public class LoginService {
         String activateCode = MyUtil.createActivateCode();
         user.setActivateCode(activateCode);
         user.setJoinTime(MyUtil.formatDate(new Date()));
-        user.setUsername("DF"+new Random().nextInt(10000)+"号");
+        user.setUsername("FLYFISH"+new Random().nextInt(10000)+"号");
         user.setHeadUrl(MyConstant.QINIU_IMAGE_URL +"head.jpg");
 
         //发送邮件

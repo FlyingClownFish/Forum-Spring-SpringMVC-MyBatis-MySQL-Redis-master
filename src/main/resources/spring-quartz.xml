@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+    <!-- 1.增加一个线程池:线程执行器配置，用于任务注册 -->
+	<bean id="executor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+	 <property name="corePoolSize" value="10" />
+	 <property name="maxPoolSize" value="20" />
+	 <property name="queueCapacity" value="100" />
+	</bean>
+	
+	<!-- 5、增加调度 -->
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+	  <property name="triggers">
+	   <list>
+			<ref local="synCommentTrigger"/> 
+	   </list>
+	  </property>
+	  <property name="taskExecutor" ref="executor"/>
+	</bean>	
+	<!-- 2、定义业务逻辑处理类 -->
+	<bean id="doBatch" class="com.fc.controller.TimeActionController"></bean>
+	
+	<!-- 删除临时图片  start -->
+	<!-- 3.增加调度业务逻辑:调度业务 -->
+	<bean id="synComment" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	  <property name="targetObject" ref="doBatch"/>
+	  <property name="targetMethod" value="comment"/>
+	  <property name="concurrent" value="false"/>
+	</bean>
+	
+		<!-- 4、增加调度触发器 -->
+	<bean id="synCommentTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+	  <property name="jobDetail" ref="synComment"/>
+	  <property name="cronExpression">
+		 <value>*/5 * * * * ?</value>
+	  </property>
+	</bean>
+	<!-- 删除临时图片  end -->
+</beans>

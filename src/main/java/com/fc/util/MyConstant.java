@@ -9,7 +9,7 @@ public class MyConstant {
     public static final String QINIU_BUCKET_NAME = "yang";
 
     //发送邮件的邮箱，要与df.properties中的一致
-    public static final String MAIL_FROM = "fanchao100@yeah.net";
+    public static final String MAIL_FROM = "flyfish19920716@163.com";
 
     //域名
     public static final String DOMAIN_NAME = "http://localhost:8080/df/";
