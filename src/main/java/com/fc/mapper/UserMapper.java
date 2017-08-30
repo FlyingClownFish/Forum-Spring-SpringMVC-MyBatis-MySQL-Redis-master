@@ -2,10 +2,13 @@ package com.fc.mapper;
 
 import com.fc.model.Info;
 import com.fc.model.User;
+
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public interface UserMapper {
@@ -49,7 +52,11 @@ public interface UserMapper {
 
     String selectVerifyCode(String email);
 
-    void updatePasswordByActivateCode(String code);
+    void updatePasswordByActivateCode(Map<String, String> map);
+    
+    public Integer findUserKey(Map<String, String> map);
+
+	void updateUserEmail(Map<String, String> map);
 
 
 }

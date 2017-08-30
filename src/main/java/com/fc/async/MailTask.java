@@ -1,6 +1,11 @@
 package com.fc.async;
 
+import java.sql.Timestamp;
+import java.util.UUID;
+
+import com.fc.util.DES3Util;
 import com.fc.util.MyConstant;
+
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.mail.javamail.MimeMessagePreparator;
@@ -13,12 +18,15 @@ public class MailTask implements Runnable {
     private String email;
     private JavaMailSender javaMailSender;
     private int operation;
-
-    public MailTask(String code, String email, JavaMailSender javaMailSender,int operation) {
+    private String secretKey;
+    private long expired;
+    public MailTask(String code, String email, JavaMailSender javaMailSender,int operation,String secretKey,long expired) {
         this.code = code;
         this.email = email;
         this.javaMailSender = javaMailSender;
         this.operation = operation;
+        this.secretKey=secretKey;
+        this.expired=expired;
     }
 
     @Override
@@ -33,7 +41,7 @@ public class MailTask implements Runnable {
                 mimeMessageHelper.setSubject("一封激活邮件");
                 StringBuilder sb  = new StringBuilder();
                 sb.append("<html><head></head><body>");
-
+                String key =code+"$"+ email + "$" + secretKey+ "$" + expired ;
                 if(operation==1){
                     sb.append("<a href="+MyConstant.DOMAIN_NAME+"activate.do?code=");
                     sb.append(code);
@@ -41,7 +49,7 @@ public class MailTask implements Runnable {
                 }else{
                     sb.append("是否将您的密码修改为:");
                     sb.append(code.substring(0,8));
-                    sb.append("，<a href="+MyConstant.DOMAIN_NAME+"verify.do?code="+code+">");
+                    sb.append("<a href="+MyConstant.DOMAIN_NAME+"verify.do?key="+DES3Util.getEncryptData(key)+">");
                     sb.append("点击是</a></body>");
                 }
 

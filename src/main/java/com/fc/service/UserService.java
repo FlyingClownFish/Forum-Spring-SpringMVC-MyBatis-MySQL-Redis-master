@@ -4,15 +4,24 @@ import com.fc.async.MailTask;
 import com.fc.mapper.UserMapper;
 import com.fc.model.Info;
 import com.fc.model.User;
+import com.fc.util.MD5;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Transaction;
 
+import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 
 @Service
@@ -114,10 +123,11 @@ public class UserService {
         return following;
     }
 
-    public String updatePassword(String password, String newpassword, String repassword, int sessionUid) {
+    public String updatePassword(String password, String newpassword, String repassword, int sessionUid,String eamil) throws NoSuchAlgorithmException, UnsupportedEncodingException {
 
         String oldPassword = userMapper.selectPasswordByUid(sessionUid);
-        if(!oldPassword.equals(password)){
+        //根据email和密码进行加密
+        if(!oldPassword.equals(MD5.MD5_64bit(eamil,password))){
             return "原密码输入错误~";
         }
 
@@ -129,7 +139,7 @@ public class UserService {
             return "新密码两次输入不一致~";
         }
 
-        userMapper.updatePassword(newpassword,sessionUid);
+        userMapper.updatePassword(MD5.MD5_64bit(eamil,newpassword),sessionUid);
         return "ok";
     }
 
@@ -138,13 +148,32 @@ public class UserService {
         String verifyCode = userMapper.selectVerifyCode(email);
         System.out.println("verifyCode:"+verifyCode);
         //发送邮件
-        taskExecutor.execute(new MailTask(verifyCode,email,javaMailSender,2));
+        String secretKey = UUID.randomUUID().toString(); // 密钥
+        Timestamp outDate = new Timestamp(System.currentTimeMillis() + 30 * 60 * 1000);// 30分钟后过期
+        long expired = outDate.getTime() / 1000 * 1000;// 忽略毫秒数  mySql 取出时间是忽略毫秒数的
+    	Map<String, String> map = new HashMap<String, String>();
+		map.put("email", email);
+		map.put("secretKey",secretKey);
+		map.put("expired",String.valueOf(expired));
+        userMapper.updateUserEmail(map);
+        taskExecutor.execute(new MailTask(verifyCode,email,javaMailSender,2,secretKey,expired));
     }
 
-    public void verifyForgetPassword(String code) {
+    public void verifyForgetPassword(String code,String email) throws NoSuchAlgorithmException, UnsupportedEncodingException {
         System.out.println("更新前："+code);
-        userMapper.updatePasswordByActivateCode(code);
+        Map<String, String> map=new HashMap<String, String>();
+        map.put("code", code);
+        map.put("password", MD5.MD5_64bit(email, code.substring(0, 8)));
+        userMapper.updatePasswordByActivateCode(map);
         System.out.println("更新后："+code);
     }
+    
+    public Integer findUserKey(String email, String expired, String secretKey) {
+		Map<String, String> map = new HashMap<String, String>();
+		map.put("email", email);
+		map.put("secretKey",secretKey);
+		map.put("expired",expired);
+		return userMapper.findUserKey(map);
+	}
 }
 

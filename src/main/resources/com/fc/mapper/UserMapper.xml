@@ -86,9 +86,33 @@
         select activate_code from user where email=#{email}
     </select>
 
-    <update id="updatePasswordByActivateCode">
-        update user set password=substring(#{code},1,8) where activate_code=#{code}
+    <update id="updatePasswordByActivateCode" parameterType="map">
+        update user set password=#{password} where activate_code=#{code}
     </update>
+    
+    <select id="findUserKey" parameterType="java.util.Map" resultType="int">
+		select
+		count(*)
+		from user a 
+		where 0 = 0 
+			<if test="loginId !=null">
+			 and a.email = #{email,jdbcType=VARCHAR} 
+			</if>
+			<if test="secretKey != null">
+			and a.SECRETKEY = #{secretKey,jdbcType=VARCHAR} 
+			</if>
+			<if test="expired != null">
+			and a.EXPIRED = #{expired,jdbcType=VARCHAR} 
+			</if>
+	</select>
+	
+    <update id="updateUserEmail" parameterType="java.util.Map">
+		update user
+	    set secretKey = #{secretKey,jdbcType=VARCHAR},
+	      expired = #{expired,jdbcType=VARCHAR}
+        where 
+        email = #{email,jdbcType=VARCHAR}
+	</update>
 </mapper>
 
 

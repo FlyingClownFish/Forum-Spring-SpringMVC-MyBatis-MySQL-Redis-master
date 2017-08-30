@@ -3,13 +3,17 @@ package com.fc.service;
 import com.fc.async.MailTask;
 import com.fc.mapper.UserMapper;
 import com.fc.model.User;
+import com.fc.util.MD5;
 import com.fc.util.MyConstant;
 import com.fc.util.MyUtil;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +33,7 @@ public class LoginService {
     private TaskExecutor taskExecutor;
 
     //注册
-    public String register(User user,String repassword) {
+    public String register(User user,String repassword) throws NoSuchAlgorithmException, UnsupportedEncodingException {
 
         //校验邮箱格式
         Pattern p = Pattern.compile("^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+((\\.[a-zA-Z0-9_-]{2,3}){1,2})$");
@@ -49,13 +53,14 @@ public class LoginService {
         if(!user.getPassword().equals(repassword)){
             return "两次密码输入不一致~";
         }
-
+       
         //检查邮箱是否被注册
         int emailCount = userMapper.selectEmailCount(user.getEmail());
         if(emailCount>0){
             return "该邮箱已被注册~";
         }
-
+        //将email和密码加密存入数据库
+        user.setPassword(MD5.MD5_64bit(user.getEmail()+"&"+user.getPassword()));
         //构造user，设置未激活
         user.setActived(0);
         String activateCode = MyUtil.createActivateCode();
@@ -65,8 +70,8 @@ public class LoginService {
         user.setHeadUrl(MyConstant.QINIU_IMAGE_URL +"head.jpg");
 
         //发送邮件
-        taskExecutor.execute(new MailTask(activateCode,user.getEmail(),javaMailSender,1));
-
+        taskExecutor.execute(new MailTask(activateCode,user.getEmail(),javaMailSender,1,null,0));
+    
         //向数据库插入记录
         userMapper.insertUser(user);
 
@@ -76,9 +81,10 @@ public class LoginService {
 
 
     //登录
-    public Map<String,Object> login(User user) {
+    public Map<String,Object> login(User user) throws NoSuchAlgorithmException, UnsupportedEncodingException {
 
         Map<String,Object> map = new HashMap<>();
+        user.setPassword(MD5.MD5_64bit(user.getEmail(),user.getPassword()));
         Integer uid = userMapper.selectUidByEmailAndPassword(user);
         if(uid==null){
             map.put("status","no");

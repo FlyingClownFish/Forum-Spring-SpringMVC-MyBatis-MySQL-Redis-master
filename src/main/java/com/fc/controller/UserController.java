@@ -5,16 +5,23 @@ import com.fc.model.User;
 import com.fc.service.PostService;
 import com.fc.service.QiniuService;
 import com.fc.service.UserService;
+import com.fc.util.DES3Util;
 import com.fc.util.MyConstant;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
+
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -104,9 +111,10 @@ public class UserController {
 
 
     @RequestMapping("/updatePassword.do")
-    public String updatePassword(String password,String newpassword,String repassword,HttpSession session,Model model){
+    public String updatePassword(String password,String newpassword,String repassword,HttpSession session,Model model) throws NoSuchAlgorithmException, UnsupportedEncodingException{
         int sessionUid = (int) session.getAttribute("uid");
-        String status = userService.updatePassword(password,newpassword,repassword,sessionUid);
+        String email=(String) session.getAttribute("email");
+        String status = userService.updatePassword(password,newpassword,repassword,sessionUid,email);
         if(status.equals("ok")){
             return "redirect:logout.do";
         }else {
@@ -176,9 +184,39 @@ public class UserController {
 
 
     @RequestMapping("/verify.do")
-    public String verify(String code){
-        userService.verifyForgetPassword(code);
-        return "redirect:toLogin.do";
+    public String verify(String key,Model model){
+        try {
+        	String decryptKey = DES3Util.getDecryptData(key);
+	    	String code="";
+			String email = "";
+			String secretKey = "";
+			String expired;
+			String [] list=decryptKey.split("\\$");
+			code = list[0];
+			email = list[1];
+			secretKey = list[2];
+			expired=list[3];
+			if(email == null || expired == null || secretKey == null || code == null){
+				model.addAttribute("error","您的链接地址已失效");
+				return "login";
+			}
+			Integer count = userService.findUserKey(email,expired,secretKey);
+			if(count == 0){
+				model.addAttribute("error","您的链接地址已失效");
+				return "login";
+			}
+			Timestamp outDate = new Timestamp(System.currentTimeMillis());// 30分钟后过期
+			long now = outDate.getTime() / 1000 * 1000;// 忽略毫秒数  mySql 取出时间是忽略毫秒数的
+			if(Long.parseLong(expired) - now < 108000l){
+				model.addAttribute("error","您的链接地址已失效");
+				return "login";
+			}
+			 userService.verifyForgetPassword(code,email);
+			 return "redirect:toLogin.do";
+		} catch (Exception e) {
+			model.addAttribute("error","您的链接地址已失效");
+			return "login";
+		}  
     }
 }
 
