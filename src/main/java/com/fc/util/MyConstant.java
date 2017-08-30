@@ -3,9 +3,9 @@ package com.fc.util;
 
 public class MyConstant {
     //七牛云相关
-    public static final String QINIU_IMAGE_URL = "http://otbwqwx7hhlk.bkt.clouddn.comwqw/";
-    public static final String QINIU_ACCESS_KEY = "eBCl2R5Hj1wqqwqYmEbJQ_js8wefqcT8bThATtURvoixD";
-    public static final String QINIU_SECRET_KEY = "qKJw93-wqwq-cUmfO0FL";
+    public static final String QINIU_IMAGE_URL = "http://otbx7hhlk.bkt.clouddn.com/";
+    public static final String QINIU_ACCESS_KEY = "eBCl2R5Hj1YmEbJQ_js8wefqcT8bThATtURvoixD";
+    public static final String QINIU_SECRET_KEY = "qKJw93-HCHPXCQG95TgZld2ZBivAhOI-cUmfO0FL";
     public static final String QINIU_BUCKET_NAME = "yang";
 
     //发送邮件的邮箱，要与df.properties中的一致
